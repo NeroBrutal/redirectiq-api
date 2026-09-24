@@ -391,7 +391,7 @@ Update after every phase: date, what was built, benchmark numbers, lessons learn
 
 | Phase | Status | Date | Notes |
 |---|---|---|---|
-| 0 | Not started | | |
+| 0 | Done | 2026-09-24 | Repo scaffolded (uv, FastAPI, async SQLAlchemy, Alembic, ruff, pytest). Postgres/Redis via Docker Compose on host ports 5433/6380 (5432/6379 were taken by other local projects). Centralized error hierarchy (`core/errors.py`) + handlers (`core/error_handlers.py`) covering AppError, validation errors, and routing-level HTTPExceptions (404/405), all returning the `{error:{code,message}}` envelope — see `.claude/skills/redirectiq-architecture/` for the architecture standard this follows. Structured JSON logging with request-ID correlation. `/health` (shared factory) checks DB+Redis on both api and redirect apps, verified over real HTTP. CORS allow-list verified (200 for allowed origin, 400 for disallowed). Pytest uses a real separate Postgres db (`redirectiq_test`, auto-created) with a session-scoped event loop so the app's cached engine/Redis singletons behave the same as in production. All acceptance criteria pass: `docker compose up`, `/health` on both apps, `alembic upgrade head`, `pytest`, `ruff check`. |
 | 1 | Not started | | |
 | 2 | Not started | | |
 | 3 | Not started | | |

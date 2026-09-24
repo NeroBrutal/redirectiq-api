@@ -68,25 +68,34 @@ Visitor ──> redirect ──> Redis ──(miss)──> PostgreSQL
 
 ## 🚀 Getting Started
 
-> Full setup instructions will be added once Phase 0 is complete.
-
 Requirements: Python 3.12+, [uv](https://github.com/astral-sh/uv), Docker & Docker Compose.
 
 ```bash
 git clone https://github.com/<your-username>/redirectiq-api.git
 cd redirectiq-api
 cp .env.example .env
-docker compose up -d
-uv sync
-uv run alembic upgrade head
-uv run fastapi dev src/app/api_main.py
+docker compose up -d          # starts Postgres (5433) and Redis (6380)
+uv sync                       # installs deps + dev tools into .venv
+uv run alembic upgrade head   # applies migrations
+uv run fastapi dev src/app/api_main.py --port 8000        # terminal 1
+uv run fastapi dev src/app/redirect_main.py --port 8001   # terminal 2
 ```
+
+> Postgres/Redis are mapped to non-default host ports (5433/6380) to avoid clashing
+> with other local projects. Container-internal ports are still the standard 5432/6379.
 
 | Service | Local URL |
 |---|---|
 | API | http://localhost:8000 |
 | API docs (Swagger) | http://localhost:8000/docs |
 | Redirect | http://localhost:8001 |
+
+Run the test suite (spins up its own `redirectiq_test` database automatically):
+
+```bash
+uv run pytest
+uv run ruff check .
+```
 
 ---
 

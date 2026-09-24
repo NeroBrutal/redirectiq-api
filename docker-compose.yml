@@ -1,0 +1,36 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-redirectiq}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-redirectiq}
+      POSTGRES_DB: ${POSTGRES_DB:-redirectiq}
+    ports:
+      # Host 5432 is already taken by other local projects on this machine —
+      # mapped to 5433 on the host; the container itself still listens on 5432.
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-redirectiq} -d ${POSTGRES_DB:-redirectiq}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      # Host 6379 is already taken by another local project — mapped to 6380 on
+      # the host; the container itself still listens on 6379.
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres_data:
+  redis_data:
