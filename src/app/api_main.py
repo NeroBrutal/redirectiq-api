@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
-from app.core.error_handlers import register_error_handlers
+from app.core.errors import register_error_handlers
 from app.core.health import build_health_router
 from app.core.logging import RequestIdMiddleware, configure_logging
 

@@ -1,6 +1,6 @@
 # Logging
 
-Every error handled in `core/error_handlers.py` is logged once, with structured fields,
+Every error handled in `core/errors/handlers.py` is logged once, with structured fields,
 never with a bare `print()` or an f-string. This is what makes logs greppable/queryable
 later (and is the whole "error portal" for local dev — see error-handling.md §4).
 
@@ -44,14 +44,14 @@ class RequestIdMiddleware(BaseHTTPMiddleware):
 ```
 
 `request_id` ties a client-visible header to every log line for that request, including
-the ones `error_handlers.py` writes — so a user-reported error can be found by its
+the ones `errors/handlers.py` writes — so a user-reported error can be found by its
 request ID without guessing timestamps.
 
 ## Rules
 
 - **Log at the boundary, not in the middle.** Services and repositories don't call
   `logger.error` themselves for expected failures — they raise, and the one handler in
-  `error_handlers.py` logs it. Logging in three places for one error produces three log
+  `errors/handlers.py` logs it. Logging in three places for one error produces three log
   lines for one incident.
 - **Structured fields, not string interpolation.** `logger.warning("link not found",
   extra={"link_id": id})`, not `logger.warning(f"link {id} not found")` — the former is

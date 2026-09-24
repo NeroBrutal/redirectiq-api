@@ -26,7 +26,7 @@ def configure_logging(level: int = logging.INFO) -> None:
 
 class RequestIdMiddleware(BaseHTTPMiddleware):
     """Assigns/propagates a request ID and stashes it on request.state for handlers
-    and logs to read (see core/error_handlers.py)."""
+    and logs to read (see core/errors/handlers.py)."""
 
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]

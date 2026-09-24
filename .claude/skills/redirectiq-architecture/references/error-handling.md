@@ -4,12 +4,14 @@ Goal: every error the API returns has a stable machine-readable `code`, a human 
 the right HTTP status, and gets logged once with enough context to debug it — without any
 router or service writing `try/except HTTPException` by hand.
 
-## 1. The exception hierarchy — `src/app/core/errors.py`
+## 1. The exception hierarchy — `src/app/core/errors/exceptions.py`
 
-One base class. Every domain error subclasses it and declares its own HTTP status + code.
+`errors/` is a package, not a single file — see `core-layout.md` for why it's split
+this way. One base class here. Every domain error subclasses it and declares its
+own HTTP status + code.
 
 ```python
-# src/app/core/errors.py
+# src/app/core/errors/exceptions.py
 from http import HTTPStatus
 
 
@@ -63,7 +65,8 @@ class RateLimitedError(AppError):
 ```
 
 Each feature adds **specific** errors in its own `exceptions.py`, subclassing these —
-never raise the base classes directly from a service:
+never raise the base classes directly from a service. Import from the package root
+(`app.core.errors`), never the submodule (`app.core.errors.exceptions`):
 
 ```python
 # src/app/links/exceptions.py
@@ -87,24 +90,36 @@ class SlugAlreadyTakenError(ConflictError):
 Error `code` values follow `<domain>_<reason>` — this is the string the frontend
 switches on, so it must never change once shipped. The `message` can change freely.
 
-## 2. Centralized handlers — `src/app/core/error_handlers.py`
+## 2. Centralized handlers — `src/app/core/errors/handlers.py`
 
 Register once, in every entrypoint (`api_main.py`, `redirect_main.py`; `worker_main.py`
 uses the logging half only, see below). Routers and services never catch these — they
-just raise.
+just raise. This file is the one place in `errors/` allowed to import FastAPI —
+`exceptions.py` stays framework-free so the worker (no FastAPI app) can still use
+the hierarchy without the import.
 
 ```python
-# src/app/core/error_handlers.py
+# src/app/core/errors/handlers.py
 import logging
 from http import HTTPStatus
 
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.core.errors import AppError
+from app.core.errors.exceptions import AppError
 
 logger = logging.getLogger("app.errors")
+
+# Routing-level failures (unmatched route, wrong method, ...) raise Starlette's
+# plain HTTPException before any app code runs — without this handler a 404 comes
+# back as FastAPI's default {"detail": "Not Found"}, breaking the envelope.
+_HTTP_EXCEPTION_CODES = {
+    status.HTTP_404_NOT_FOUND: "not_found",
+    status.HTTP_405_METHOD_NOT_ALLOWED: "method_not_allowed",
+    # add more as they come up; anything missing falls back to f"http_{status_code}"
+}
 
 
 def _error_response(status_code: int, code: str, message: str) -> JSONResponse:
@@ -114,6 +129,12 @@ def _error_response(status_code: int, code: str, message: str) -> JSONResponse:
 
 
 def register_error_handlers(app: FastAPI) -> None:
+    @app.exception_handler(StarletteHTTPException)
+    async def handle_http_exception(request: Request, exc: StarletteHTTPException) -> JSONResponse:
+        code = _HTTP_EXCEPTION_CODES.get(exc.status_code, f"http_{exc.status_code}")
+        message = exc.detail if isinstance(exc.detail, str) else "Request failed."
+        return _error_response(exc.status_code, code, message)
+
     @app.exception_handler(AppError)
     async def handle_app_error(request: Request, exc: AppError) -> JSONResponse:
         log = logger.warning if exc.status_code < 500 else logger.error
@@ -157,7 +178,7 @@ Wire it up:
 ```python
 # src/app/api_main.py
 from fastapi import FastAPI
-from app.core.error_handlers import register_error_handlers
+from app.core.errors import register_error_handlers  # package root, not errors.handlers
 from app.core.logging import RequestIdMiddleware, configure_logging
 
 configure_logging()

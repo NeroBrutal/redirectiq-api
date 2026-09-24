@@ -15,7 +15,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.requests import Request
 
-from app.core.errors import AppError
+from app.core.errors.exceptions import AppError
 
 logger = logging.getLogger("app.errors")
 

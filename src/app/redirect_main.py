@@ -8,7 +8,7 @@ Run locally with: uv run fastapi dev src/app/redirect_main.py --port 8001
 
 from fastapi import FastAPI
 
-from app.core.error_handlers import register_error_handlers
+from app.core.errors import register_error_handlers
 from app.core.health import build_health_router
 from app.core.logging import RequestIdMiddleware, configure_logging
 

@@ -1,4 +1,10 @@
-"""Async Redis client, created lazily and shared for the life of the process."""
+"""Async Redis client, created lazily and shared for the life of the process.
+
+Absolute imports (the Python 3 default) mean `from redis.asyncio import Redis`
+below resolves to the third-party `redis` package, not this local `app.core.redis`
+package, even though they share a name — Python only reaches this package via the
+dotted path `app.core.redis`. No alias/rename needed.
+"""
 
 from functools import lru_cache
 

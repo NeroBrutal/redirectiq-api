@@ -18,6 +18,7 @@ from scratch each time:
 | Raising, catching, or adding a new error type | `references/error-handling.md` |
 | Adding a shared dependency, base class, or utility | `references/reusable-code.md` |
 | Setting up logging or reviewing what gets logged | `references/logging.md` |
+| Adding to `core/`, or deciding whether something needs its own subpackage | `references/core-layout.md` |
 
 ## Non-negotiables (from plan.md, restated so they're not missed)
 
@@ -31,6 +32,36 @@ from scratch each time:
 - Every route lives under `/v1/`, has an explicit `response_model`, a unique `operation_id`,
   and a tag.
 - No abstraction until it's needed twice. Don't pre-build generic layers for a single caller.
+
+## The shape of `core/`
+
+`core/` is cross-cutting infrastructure, not a feature — but it gets the same
+one-concern-per-unit treatment. A concern that's more than one cohesive piece (a
+hierarchy *and* its wiring, a client *and* its helpers) is a **subpackage**, not a
+growing single file:
+
+```
+src/app/core/
+├── config.py          # single concern, one file — stays a file
+├── db.py               # single concern, one file — stays a file
+├── logging.py           # single concern, one file — stays a file
+├── health.py             # single concern, one file — stays a file
+├── errors/                # more than one piece: hierarchy + FastAPI wiring
+│   ├── __init__.py          # re-exports the public API — this is what call sites import
+│   ├── exceptions.py         # the AppError hierarchy
+│   └── handlers.py            # register_error_handlers(app)
+└── redis/                  # room to grow: client now, rate-limit/streams helpers later
+    ├── __init__.py
+    └── client.py
+```
+
+Call sites always import from the package root — `from app.core.errors import
+AppError, register_error_handlers`, `from app.core.redis import get_redis` — never
+from the submodule directly. That's what the `__init__.py` re-export is for: it
+means a caller never needs to know or care whether a concern is one file or five.
+
+Full details, and the rule for when to promote a file to a package, are in
+`references/core-layout.md`.
 
 ## The shape of a feature module
 

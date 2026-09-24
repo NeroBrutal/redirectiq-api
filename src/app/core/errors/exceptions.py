@@ -1,7 +1,7 @@
 """Base exception hierarchy for the app.
 
 Every error raised on purpose subclasses AppError. Anything else is treated as an
-unhandled bug by the global handler in error_handlers.py (logged with a traceback,
+unhandled bug by the global handler in errors/handlers.py (logged with a traceback,
 returned as a generic 500). Feature modules add specific errors in their own
 exceptions.py, subclassing the ones below — never raise these base classes directly.
 See .claude/skills/redirectiq-architecture/references/error-handling.md.
